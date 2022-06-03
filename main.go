@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -143,9 +144,28 @@ func processLaps(laps []Lap) []TAClass {
 
 		driverResult.TotalTime = totalTime
 		driverResult.Sessions = sessions
+		driverResult.Class = laps[0].Class
 		driverResults = append(driverResults, driverResult)
 	}
-	return nil
+
+	sort.Sort(DriverResultsAscendingLapTimeSort(driverResults))
+	classMap := make(map[string][]DriverResult)
+	for _, dr := range driverResults {
+		c := classMap[dr.Class]
+		if c == nil {
+			c = make([]DriverResult, 0)
+		}
+		c = append(c, dr)
+		classMap[dr.Class] = c
+	}
+	classes := make([]TAClass, 0)
+	for c, drs := range classMap {
+		classes = append(classes, TAClass{
+			Name:    c,
+			Drivers: drs,
+		})
+	}
+	return classes
 }
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
