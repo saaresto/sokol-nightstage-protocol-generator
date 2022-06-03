@@ -13,38 +13,18 @@ import (
 )
 
 const LAPS_IN_SESSION int = 3
+const SESSION_COUNT int = 3
 
-type Lap struct {
-	Num         int
-	DriverNo    string
-	DriverName  string
-	LapTime     time.Duration
-	Transponder string
-	Class       string
-}
-
-type Session struct {
-	LapTimes []time.Duration
-	BestLap  time.Duration
-}
-
-type DriverResult struct {
-	DriverName string
-	DriverNum  string
-	Sessions   []Session
-	TotalTime  time.Duration
-}
-
-type Class struct {
-	Name    string
-	Drivers []DriverResult
-}
+var LAPTIME_THRESHOLD, _ = time.ParseDuration("3m")
 
 func convert(rec []string) (Lap, error) {
 	laptime, err := time.ParseDuration(formatTime(rec[5]))
 	if err != nil {
 		return Lap{}, err
 	}
+	//if laptime > LAPTIME_THRESHOLD {
+	//	return Lap{}, types.Error{}
+	//}
 	num, _ := strconv.Atoi(rec[0])
 	var class string
 	if len(rec[16]) > 1 {
@@ -108,11 +88,63 @@ func handleUpload(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sheetsData := processLaps(laps)
-
 	fmt.Println(sheetsData)
 }
 
-func processLaps(laps []Lap) []Class {
+func processLaps(laps []Lap) []TAClass {
+	lapsByDriver := make(map[string][]Lap)
+	for _, l := range laps {
+		driverLaps := lapsByDriver[l.DriverName]
+		if len(driverLaps) < 1 {
+			lapsByDriver[l.DriverName] = append([]Lap{}, l)
+		} else {
+			lapsByDriver[l.DriverName] = append(driverLaps, l)
+		}
+	}
+
+	driverResults := make([]DriverResult, 0)
+	for name, laps := range lapsByDriver {
+		driverResult := DriverResult{
+			DriverName: name,
+			DriverNo:   laps[0].DriverNo,
+		}
+		sessions := make([]Session, 0)
+		session := Session{LapTimes: make([]time.Duration, 0)}
+		for _, lap := range laps {
+			if lap.LapTime > LAPTIME_THRESHOLD {
+				if len(session.LapTimes) > 0 {
+					bestLap := LAPTIME_THRESHOLD
+					for _, l := range session.LapTimes {
+						if l < bestLap {
+							bestLap = l
+						}
+					}
+					session.BestLap = bestLap
+					sessions = append(sessions, session)
+				}
+				session = Session{}
+				continue
+			}
+			session.LapTimes = append(session.LapTimes, lap.LapTime)
+		}
+		bestLap := LAPTIME_THRESHOLD
+		for _, l := range session.LapTimes {
+			if l < bestLap {
+				bestLap = l
+			}
+		}
+		session.BestLap = bestLap
+		sessions = append(sessions, session)
+
+		var totalTime time.Duration = 0
+		for _, s := range sessions {
+			totalTime += s.BestLap
+		}
+
+		driverResult.TotalTime = totalTime
+		driverResult.Sessions = sessions
+		driverResults = append(driverResults, driverResult)
+	}
 	return nil
 }
 
