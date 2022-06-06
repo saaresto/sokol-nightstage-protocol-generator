@@ -29,6 +29,11 @@ type TAClass struct {
 	Drivers []DriverResult
 }
 
+type TrackDayClass struct {
+	Name string
+	Laps []Lap
+}
+
 type DriverResultsAscendingLapTimeSort []DriverResult
 
 func (e DriverResultsAscendingLapTimeSort) Len() int {
@@ -40,5 +45,19 @@ func (e DriverResultsAscendingLapTimeSort) Less(i, j int) bool {
 }
 
 func (e DriverResultsAscendingLapTimeSort) Swap(i, j int) {
+	e[i], e[j] = e[j], e[i]
+}
+
+type TrackDayClassAscendingLapTimeSort []Lap
+
+func (e TrackDayClassAscendingLapTimeSort) Len() int {
+	return len(e)
+}
+
+func (e TrackDayClassAscendingLapTimeSort) Less(i, j int) bool {
+	return e[i].LapTime < e[j].LapTime
+}
+
+func (e TrackDayClassAscendingLapTimeSort) Swap(i, j int) {
 	e[i], e[j] = e[j], e[i]
 }
