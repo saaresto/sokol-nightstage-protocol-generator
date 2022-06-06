@@ -18,6 +18,7 @@ const LAPS_IN_SESSION int = 3
 const SESSION_COUNT int = 3
 
 var LAPTIME_THRESHOLD, _ = time.ParseDuration("3m")
+var EMPTY_LAP, _ = time.ParseDuration("0s")
 
 func convert(rec []string) (Lap, error) {
 	laptime, err := time.ParseDuration(formatTime(rec[5]))
@@ -215,6 +216,17 @@ func processLaps(laps []Lap) []TAClass {
 		var totalTime time.Duration = 0
 		for _, s := range sessions {
 			totalTime += s.BestLap
+		}
+
+		for i := len(sessions); i < SESSION_COUNT; i++ {
+			emptySession := Session{
+				LapTimes: make([]time.Duration, LAPS_IN_SESSION),
+				BestLap:  EMPTY_LAP,
+			}
+			for i := 0; i < LAPS_IN_SESSION; i++ {
+				emptySession.LapTimes = append(emptySession.LapTimes, EMPTY_LAP)
+			}
+			sessions = append(sessions, emptySession)
 		}
 
 		driverResult.TotalTime = totalTime
