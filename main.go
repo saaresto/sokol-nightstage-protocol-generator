@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"github.com/gorilla/mux"
 	"log"
 	"net/http"
@@ -9,11 +10,15 @@ import (
 	"time"
 )
 
-const LAPS_IN_SESSION int = 3
-const SESSION_COUNT int = 3
+var (
+	//go:embed template/index.html
+	indexPage string
 
-var LAPTIME_THRESHOLD, _ = time.ParseDuration("3m")
-var EMPTY_LAP, _ = time.ParseDuration("0s")
+	LAPS_IN_SESSION      int = 3
+	SESSION_COUNT        int = 3
+	LAPTIME_THRESHOLD, _     = time.ParseDuration("3m")
+	EMPTY_LAP, _             = time.ParseDuration("0s")
+)
 
 func convert(rec []string) (Lap, error) {
 	laptime, err := time.ParseDuration(formatTime(rec[5]))
@@ -53,7 +58,7 @@ func (t Timespan) Format(format string) string {
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html")
-	http.ServeFile(w, r, "template/index.html")
+	http.ServeFile(w, r, indexPage) // https://stackoverflow.com/questions/70068302/how-to-serve-file-from-go-embed
 }
 
 func main() {
