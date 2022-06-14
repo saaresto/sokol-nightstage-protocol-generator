@@ -58,7 +58,7 @@ func (t Timespan) Format(format string) string {
 
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	w.Header().Add("Content-Type", "text/html")
-	http.ServeFile(w, r, indexPage) // https://stackoverflow.com/questions/70068302/how-to-serve-file-from-go-embed
+	w.Write([]byte(indexPage))
 }
 
 func main() {
